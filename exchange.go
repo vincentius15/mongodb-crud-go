@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 )
@@ -30,11 +28,10 @@ func (e *exchange) insert(DB *mgo.Database) error {
 
 func (e *exchange) update(DB *mgo.Database) error {
 	err := DB.C("exchange").UpdateId(e.ID, &e)
-	log.Println(err)
 	return err
 }
 
 func (e *exchange) delete(DB *mgo.Database) error {
-	err := DB.C("exchange").Remove(&e)
+	err := DB.C("exchange").RemoveId(e.ID)
 	return err
 }

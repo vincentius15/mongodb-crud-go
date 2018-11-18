@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -58,7 +57,18 @@ func (a *app) updateExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) deleteExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "not implemented yet !")
+	defer r.Body.Close()
+	exchange := exchange{}
+	if err := json.NewDecoder(r.Body).Decode(&exchange); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if err := exchange.delete(a.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func (a *app) initialize() {
