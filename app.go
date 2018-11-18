@@ -43,7 +43,18 @@ func (a *app) createExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) updateExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "not implemented yet !")
+	defer r.Body.Close()
+	exchange := exchange{}
+	if err := json.NewDecoder(r.Body).Decode(&exchange); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if err := exchange.update(a.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func (a *app) deleteExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +65,8 @@ func (a *app) initialize() {
 	a.Router = mux.NewRouter()
 	a.Router.HandleFunc("/exchange", a.getAllExchangesEndpoint).Methods("GET")
 	a.Router.HandleFunc("/exchange", a.createExchangesEndpoint).Methods("POST")
-	a.Router.HandleFunc("/exchange/{id}", a.updateExchangesEndpoint).Methods("PUT")
-	a.Router.HandleFunc("/exchange/{id}", a.deleteExchangesEndpoint).Methods("DELETE")
+	a.Router.HandleFunc("/exchange", a.updateExchangesEndpoint).Methods("PUT")
+	a.Router.HandleFunc("/exchange", a.deleteExchangesEndpoint).Methods("DELETE")
 	connection := connector{
 		Server:   "mongodb://192.168.33.10:27017",
 		Database: "currency",
