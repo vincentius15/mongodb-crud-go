@@ -6,6 +6,7 @@ import (
 )
 
 type exchange struct {
+	ID    bson.ObjectId      `json:"_id" bson:"_id"`
 	Date  string             `json:"date"`
 	Rates map[string]float64 `json:"rates"`
 	Base  string             `json:"base"`
@@ -21,7 +22,7 @@ func (e *exchange) getAll(DB *mgo.Database) ([]exchange, error) {
 }
 
 func (e *exchange) insert(DB *mgo.Database) error {
-	err := DB.C("").Insert(&e)
+	err := DB.C("exchange").Insert(&e)
 	return err
 }
 

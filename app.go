@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 
 	"github.com/gorilla/mux"
 )
@@ -27,7 +28,18 @@ func (a *app) getAllExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) createExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "not implemented yet !")
+	defer r.Body.Close()
+	exchange := exchange{}
+	if err := json.NewDecoder(r.Body).Decode(&exchange); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	exchange.ID = bson.NewObjectId()
+	if err := exchange.insert(a.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusCreated, exchange)
 }
 
 func (a *app) updateExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -40,10 +52,10 @@ func (a *app) deleteExchangesEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) initialize() {
 	a.Router = mux.NewRouter()
-	a.Router.HandleFunc("/exchanges", a.getAllExchangesEndpoint).Methods("GET")
-	a.Router.HandleFunc("/exchanges", a.createExchangesEndpoint).Methods("POST")
-	a.Router.HandleFunc("/exchanges/{id}", a.updateExchangesEndpoint).Methods("PUT")
-	a.Router.HandleFunc("/exchanges/{id}", a.deleteExchangesEndpoint).Methods("DELETE")
+	a.Router.HandleFunc("/exchange", a.getAllExchangesEndpoint).Methods("GET")
+	a.Router.HandleFunc("/exchange", a.createExchangesEndpoint).Methods("POST")
+	a.Router.HandleFunc("/exchange/{id}", a.updateExchangesEndpoint).Methods("PUT")
+	a.Router.HandleFunc("/exchange/{id}", a.deleteExchangesEndpoint).Methods("DELETE")
 	connection := connector{
 		Server:   "mongodb://192.168.33.10:27017",
 		Database: "currency",
@@ -61,7 +73,6 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(code)
 	w.Write(response)
 }
